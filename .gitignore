@@ -1,0 +1,11 @@
+pb_data
+pocketbase
+node_modules
+.git
+.env
+pocketbase.exe
+.claude 
+__pycache__
+.venv 
+memory
+

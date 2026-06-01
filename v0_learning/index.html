@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .kanban-board {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .kanban-column {
+            flex: 1;
+            background-color: #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            min-width: 280px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .kanban-column h2 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .add-task-container {
+            display: flex;
+            margin-bottom: 15px;
+            gap: 5px;
+        }
+        .add-task-input {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .add-task-btn {
+            padding: 8px 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .add-task-btn:hover {
+            background-color: #218838;
+        }
+        .kanban-items-wrapper {
+            flex-grow: 1;
+            overflow-y: auto; /* Enable scrolling for tasks */
+            padding-right: 5px; /* Space for scrollbar */
+        }
+        .kanban-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: grab;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            color: #333;
+        }
+        .kanban-item:last-child {
+            margin-bottom: 0;
+        }
+        .kanban-item.dragging {
+            opacity: 0.5;
+            border: 2px dashed #007bff;
+        }
+        .kanban-column.drag-over {
+            background-color: #cce5ff;
+            border: 2px dashed #007bff;
+        }
+        .delete-task-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 8px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-left: 10px;
+            transition: background-color 0.2s;
+        }
+        .delete-task-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* Task Colors */
+        .task-color-1 { background-color: #f8d7da; } /* Light Red */
+        .task-color-2 { background-color: #d4edda; } /* Light Green */
+        .task-color-3 { background-color: #fff3cd; } /* Light Yellow */
+        .task-color-4 { background-color: #d1ecf1; } /* Light Blue */
+        .task-color-5 { background-color: #e2e3e5; } /* Light Grey */
+
+    </style>
+</head>
+<body>
+    <div class="kanban-board">
+        <div class="kanban-column" id="todo">
+            <h2>Todo</h2>
+            <div class="add-task-container">
+                <input type="text" id="new-task-input" class="add-task-input" placeholder="Add a new task...">
+                <button id="add-task-btn" class="add-task-btn">Add Task</button>
+            </div>
+            <div class="kanban-items-wrapper">
+                <div class="kanban-item task-color-1" id="task1" draggable="true">
+                    <span>Plan project</span>
+                    <button class="delete-task-btn">X</button>
+                </div>
+                <div class="kanban-item task-color-2" id="task2" draggable="true">
+                    <span>Research technologies</span>
+                    <button class="delete-task-btn">X</button>
+                </div>
+            </div>
+        </div>
+        <div class="kanban-column" id="in-progress">
+            <h2>In Progress</h2>
+            <div class="kanban-items-wrapper">
+                <div class="kanban-item task-color-3" id="task3" draggable="true">
+                    <span>Develop core features</span>
+                    <button class="delete-task-btn">X</button>
+                </div>
+            </div>
+        </div>
+        <div class="kanban-column" id="done">
+            <h2>Done</h2>
+            <div class="kanban-items-wrapper">
+                <div class="kanban-item task-color-4" id="task4" draggable="true">
+                    <span>Setup environment</span>
+                    <button class="delete-task-btn">X</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const columns = document.querySelectorAll('.kanban-column');
+        const todoColumn = document.getElementById('todo');
+        const newTaskInput = document.getElementById('new-task-input');
+        const addTaskBtn = document.getElementById('add-task-btn');
+        const taskColors = ['task-color-1', 'task-color-2', 'task-color-3', 'task-color-4', 'task-color-5'];
+        let currentColorIndex = 0;
+        let draggedItem = null;
+
+        function addDragListeners(item) {
+            item.addEventListener('dragstart', () => {
+                draggedItem = item;
+                setTimeout(() => {
+                    item.classList.add('dragging');
+                }, 0);
+            });
+
+            item.addEventListener('dragend', () => {
+                draggedItem.classList.remove('dragging');
+                draggedItem = null;
+            });
+        }
+
+        function addDeleteListener(button) {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent dragstart from firing if clicking delete button
+                button.closest('.kanban-item').remove();
+            });
+        }
+
+        function createNewTaskElement(taskText) {
+            const newItem = document.createElement('div');
+            newItem.classList.add('kanban-item');
+            newItem.setAttribute('draggable', 'true');
+            newItem.id = 'task' + Date.now(); // Unique ID
+
+            // Assign a color
+            newItem.classList.add(taskColors[currentColorIndex]);
+            currentColorIndex = (currentColorIndex + 1) % taskColors.length;
+
+            newItem.innerHTML = `<span>${taskText}</span><button class="delete-task-btn">X</button>`;
+
+            addDragListeners(newItem);
+            addDeleteListener(newItem.querySelector('.delete-task-btn'));
+
+            return newItem;
+        }
+
+        // Initialize existing items
+        document.querySelectorAll('.kanban-item').forEach(item => {
+            addDragListeners(item);
+            addDeleteListener(item.querySelector('.delete-task-btn'));
+        });
+
+        columns.forEach(column => {
+            column.addEventListener('dragover', e => {
+                e.preventDefault(); // Allow drop
+                const afterElement = getDragAfterElement(column.querySelector('.kanban-items-wrapper'), e.clientY);
+                const draggable = document.querySelector('.dragging');
+                if (draggable) {
+                    if (afterElement == null) {
+                        column.querySelector('.kanban-items-wrapper').appendChild(draggable);
+                    } else {
+                        column.querySelector('.kanban-items-wrapper').insertBefore(draggable, afterElement);
+                    }
+                }
+                column.classList.add('drag-over');
+            });
+
+            column.addEventListener('dragleave', () => {
+                column.classList.remove('drag-over');
+            });
+
+            column.addEventListener('drop', () => {
+                column.classList.remove('drag-over');
+            });
+        });
+
+        addTaskBtn.addEventListener('click', () => {
+            const taskText = newTaskInput.value.trim();
+            if (taskText) {
+                const todoItemsWrapper = todoColumn.querySelector('.kanban-items-wrapper');
+                todoItemsWrapper.appendChild(createNewTaskElement(taskText));
+                newTaskInput.value = '';
+            }
+        });
+
+        newTaskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addTaskBtn.click();
+            }
+        });
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.kanban-item:not(.dragging)')];
+
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+    </script>
+</body>
+</html>
