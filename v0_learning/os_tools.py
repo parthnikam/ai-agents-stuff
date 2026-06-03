@@ -20,16 +20,14 @@ def scan_dir(dir: str):
                 print(f"\tFile: {name} ({file_size} bytes)")
             except (FileNotFoundError, PermissionError):
                 print(f"\tFile: {name} (error reading file size)")
-        
-        
-        
-        
+
 
 def read_file(dir: str):
     with open(dir, "rb") as f:
         data = f.read()
         print(data[:100])
-    
+
+
 def write_file(dir: str, data: str):
     with open(dir, "w", encoding="utf-8") as f:
         f.write(data)
